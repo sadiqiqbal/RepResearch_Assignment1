@@ -1,3 +1,10 @@
+---
+title: "Assignment1"
+author: Rizwan Iqbal
+date: May 26, 2016
+output: md_document
+---
+
 **<span style="color:black">Assignment 1 - Week 2 - Reproducible Research</span>**
 ==============================================
 ## **<span style="color:black">Introduction</span>**
@@ -28,7 +35,7 @@ library(ggplot2)
 #### *<span style="color:brown">Loading and preprocessing the data</span>*
 The folder repdata_data_activity containing the dataset Activity monitoring data has been downloaded and unzipped within the folder Assignment1. The path to this working directory is applied. 
 ```{r}
-setwd("~/Coursera/Reproducible Research/Week2/Week2/Assignment1/repdata_data_activity")
+setwd("~/Coursera/ReproducibleResearch/Week2/Week2/Assignment1/repdata_data_activity")
 ```
  
 Now load the raw data from the csv file, then know the information about the structure of the file and have a summary of it
