@@ -1,0 +1,182 @@
+**<span style="color:black">Assignment 1 - Week 2 - Reproducible Research</span>**
+==============================================
+## **<span style="color:black">Introduction</span>**
+This assignment makes use of data from a personal activity monitoring device. This device collects data at 5 minute intervals through out the day. The data consists of two months of data from an anonymous individual collected during the months of October and November, 2012 and include the number of steps taken in 5 minute intervals each day.
+
+The variables included in this dataset are:
+
+* steps: Number of steps taking in a 5-minute interval (missing values are coded as NA)
+* date: The date on which the measurement was taken in YYYY-MM-DD format
+* interval: Identifier for the 5-minute interval in which measurement was taken
+
+## **<span style="color:black">Assignment steps</span>**
+
+#### *<span style="color:brown">Clear the workspace</span>*
+```{r}
+rm(list=ls())
+```
+
+#### *<span style="color:brown">Required packages</span>*
+```{r}
+library (knitr)
+library(markdown)
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+```
+
+#### *<span style="color:brown">Loading and preprocessing the data</span>*
+The folder repdata_data_activity containing the dataset Activity monitoring data has been downloaded and unzipped within the folder Assignment1. The path to this working directory is applied. 
+```{r}
+setwd("~/Coursera/Reproducible Research/Week2/Week2/Assignment1/repdata_data_activity")
+```
+ 
+Now load the raw data from the csv file, then know the information about the structure of the file and have a summary of it
+```{r}
+raw_data <- read.csv("activity.csv", header = TRUE, sep = ",",stringsAsFactors=FALSE)
+str(raw_data)
+summary(raw_data)
+```
+ 
+Lubridate's parsing functions read strings into R as POSIXct date-time objects. This package is used to format the date in the dataset. And, see the first 15 rows of the data.
+```{r}
+raw_data$date <- ymd(raw_data$date)
+head(raw_data,15)
+```
+
+Get/set days component of a date-time using wday function from Lubridate is invoked and the first and last several rows of the data set is viewed. The variables included in this dataset are:
+
+* steps: number of steps taken per 5-minute interval (missing values are coded as NA)
+* date: year-month-day format
+* interval: identifier for the 5-minute interval
+* Weekday: the relevant day of the week
+```{r}
+raw_data$Weekday<-wday(raw_data$date, label = TRUE, abbr = FALSE)
+head(raw_data)
+tail(raw_data)
+```
+
+#### *<span style="color:brown">Mean total number of steps taken/day</span>*
+* ##### *<span style="color:green">Bar plot of the total number of steps taken by ignoring the missing values/day</span>*
+```{r}
+Daytot <- raw_data %>% group_by(date) %>%summarise(sum_steps=sum(steps,na.rm=TRUE),na=mean(is.na(steps)))
+head(Daytot, 20) ## The first 20 rows for example
+```
+And, the total number of steps taken per day can be presented by a bar diagram using the following code:
+```{r}
+barplot(height=Daytot$sum_steps,names.arg=Daytot$date,cex.axis= 2, cex.names=0.75,las=3, col=heat.colors(7))
+legend("topright", fill=heat.colors(7), legend=c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))
+abline(h=median(Daytot$sum_steps), col="blue",lwd=2)
+abline(h=mean(Daytot$sum_steps),lwd=2)
+text(x = 0.5,y=median(Daytot$sum_steps),pos=3,labels = "median", col="blue")
+text(x = -0.5,y=mean(Daytot$sum_steps),pos=1,labels = "mean")
+```
+
+* ##### *<span style="color:green">Histogram of the total number of steps taken each day</span>*
+
+A histogram of total number of steps taken each day does not contain those days where there are missing observations. So a filter is set to filter all the missing values and sum the steps.
+
+```{r}
+Daytot <- filter(Daytot, na < 1)
+hist(Daytot$sum_steps,col="cyan",breaks=20,main="Histogram of the total number of steps taken each day",xlab="Steps per day")
+abline(v=median(Daytot$sum_steps), lty=1,lwd=2)
+legend("topright",lty=1,lwd=2,legend="Median")
+```
+
+* ##### *<span style="color:green">Mean and median of the total number of steps taken/day</span>*
+
+Based on the data, the mean and the median total number of steps take per day are calculated from 
+```{r}
+SMean <- mean(Daytot$sum_steps,na.rm=TRUE)
+SMedian <- median(Daytot$sum_steps,na.rm=TRUE)
+options(scipen = 999) # disables the scientific notation
+SMean <- round(SMean) # rounding off
+SMeadian <- round(SMedian) # rounding off
+``` 
+and are `r SMean` and `r SMedian` respectively.
+
+#### *<span style="color:brown">Average daily activity pattern</span>*
+* ##### *<span style="color:green">Time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)</span>*
+
+```{r}
+raw_data_na_omit <- na.omit(raw_data)
+MSI <- tapply(raw_data_na_omit$steps, raw_data_na_omit$interval, mean, na.rm = TRUE) # mean of the steps but broken by interval
+MSIC <- cbind.data.frame(interval = as.integer(names(MSI)),avgsteps = unname(MSI))
+plot(MSIC$interval,MSIC$avgsteps,type = "l",xlab = "Interval",ylab = "Average number of steps",main = " Everyday's activity", col="red", lwd=2)
+```
+
+* ##### *<span style="color:green">The 5-minute interval, on average across all the days in the dataset, which contains the maximum number of steps</span>*
+
+```{r}
+Max_Avg_Int = MSIC$interval[MSIC$avgsteps == max(MSIC$avgsteps)]
+```
+
+Hence, the 5-minute interval that contains the maximum of steps, on average across all days is `r Max_Avg_Int`.
+
+#### *<span style="color:brown">To input missing values</span>*
+* ##### *<span style="color:green">The total number of missing values in the dataset is calculated using</span>*
+
+```{r}
+TMV=nrow(raw_data[is.na(raw_data$steps),])
+```
+
+and is found to be `r TMV`.
+
+* ##### *<span style="color:green">Strategy for filling in the missing values</span>*
+* ##### *<span style="color:green">Creating a new dataset that is equal to the original dataset but with the missing data filled in (i.e. by replacing the NAs by the mean of the interval).</span>*
+
+The strategy is to replace the missing NA values with the corresponding mean of the 5-minute interval attribute calculated as follows
+
+```{r}
+Replaceddata <- raw_data
+sapply(unique(raw_data$interval),function(x) Replaceddata[!complete.cases(Replaceddata) & (Replaceddata$interval == x),1] <<- MSIC$avgsteps[MSIC$interval == x])
+head(Replaceddata)
+```
+
+
+* ##### *<span style="color:green">Histogram of the total number of steps taken each day, and the mean and median total number of steps taken per day.</span>*
+
+```{r}
+MSD <- tapply(Replaceddata$steps, Replaceddata$date, sum, na.rm = TRUE); # mean of the steps but broken by date
+MSDC <- cbind.data.frame(date = names(MSD),totalsteps = unname(MSD))
+hist(MSDC[,2], xlab = "Number of Steps Per Day", ylab = "Number of Days", main = "Frequency of Total Steps in a day", col = "cyan")
+```
+
+The mean and median total number of steps taken per day are calculated using 
+
+```{r}
+meansteps <- mean(MSDC$totalsteps) 
+```
+
+```{r}
+mediansteps <- median(MSDC$totalsteps)
+```
+
+and are found to be `r meansteps` and `r mediansteps` after filling the data respectively. These values differ from the first part of the assignment slightly such that before filling the data, they were found to be `r SMean` and `r SMedian` after rounding respectively.
+
+
+#### *<span style="color:brown">Are there differences in activity patterns between weekdays and weekends?</span>*
+
+* ##### *<span style="color:green">Create a new factor variable in the dataset with two levels - "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.</span>*
+* ##### *<span style="color:green">Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis).</span>*
+
+```{r}
+Replaceddata$date <- as.Date(Replaceddata$date, "%Y-%m-%d")
+Replaceddata$weekend <- "weekday"
+Replaceddata$weekend[weekdays(Replaceddata$date) %in% c("Saturday","Sunday")] <- "weekend"
+Replaceddata$weekend <- as.factor(Replaceddata$weekend)
+ArrangedData <- Replaceddata %>%
+group_by(interval, weekend) %>%
+summarize(avgsteps = mean(steps))
+```
+
+The following figure shows that the activity during the weekend has more peaks than the weekday activity, with a better distribution of effort along the time, though the activity on the weekday has the greatest peak from all steps intervals.
+
+```{r}
+ggplot(ArrangedData, aes(x=interval, y=avgsteps)) + 
+geom_line(color="red", size=1) + 
+facet_wrap(~ weekend, c(2, 1)) +
+labs(x="5-minute interval", y="Average number of steps") +
+ggtitle("Average number of steps taken - averaged accross weekdays/ weekend") +
+theme_bw()
+```
